@@ -26,6 +26,8 @@ import asyncio
 from streamlit_lottie import st_lottie
 import requests
 import tempfile
+import io
+from fpdf import FPDF
 
 class ConditionInfo(BaseModel):
     code: str
@@ -609,16 +611,43 @@ async def run_workflow_async(patient_json_path):
 
     return response_dict
 
-# Add these imports for enhanced UI
-from streamlit_lottie import st_lottie
-import requests
-from datetime import datetime
-
-def load_lottie_url(url: str):
-    r = requests.get(url)
-    if r.status_code != 200:
-        return None
-    return r.json()
+# Add this BEFORE the UI code starts (before the st.set_page_config line)
+def generate_pdf_report(case_summary: CaseSummary) -> bytes:
+    """Generate a PDF version of the case summary."""
+    buffer = io.BytesIO()
+    pdf = FPDF()
+    pdf.add_page()
+    
+    # Set up fonts
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "Clinical Case Summary", ln=True, align='C')
+    
+    # Patient Info
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, f"Patient Information:", ln=True)
+    pdf.set_font("Arial", "", 12)
+    pdf.cell(0, 10, f"Name: {case_summary.patient_name}", ln=True)
+    pdf.cell(0, 10, f"Age: {case_summary.age} years", ln=True)
+    
+    # Overall Assessment
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, "Overall Assessment:", ln=True)
+    pdf.set_font("Arial", "", 12)
+    pdf.multi_cell(0, 10, case_summary.overall_assessment)
+    
+    # Condition Summaries
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, "Condition Summaries:", ln=True)
+    for condition in case_summary.condition_summaries:
+        pdf.set_font("Arial", "B", 11)
+        pdf.cell(0, 10, condition.condition_display, ln=True)
+        pdf.set_font("Arial", "", 11)
+        pdf.multi_cell(0, 10, condition.summary)
+    
+    # Important: Get the PDF bytes before returning
+    pdf_bytes = buffer.getvalue()
+    buffer.close()
+    return pdf_bytes
 
 # Configure the page with a wider layout and custom theme
 st.set_page_config(
@@ -721,12 +750,6 @@ with st.sidebar:
         st.success("✅ File uploaded successfully!")
         file_contents = uploaded_file.getvalue()
         st.session_state['file_contents'] = file_contents
-        if st.button("�� Generate Summary", 
-                    use_container_width=True,
-                    key="generate_summary_button"):
-            with tempfile.NamedTemporaryFile(mode='wb', delete=False, suffix='.json') as tmp_file:
-                tmp_file.write(file_contents)
-                st.session_state['temp_path'] = tmp_file.name
 
 # Main content
 st.title("🏥 Patient Case Summary Generator")
@@ -855,150 +878,146 @@ else:
 
             # Results display
             st.markdown("### 📊 Analysis Results")
-            tab1, tab2 = st.tabs(["📑 Clinical Summary", "👤 Patient Details"])
+            tabs = st.tabs(["📑 Clinical Summary", "🎯 Conditions", "💊 Medications", "📋 Encounters"])
             
-            with tab1:
+            with tabs[0]:
+                # Add a modern card style for the summary
                 st.markdown("""
-                <div class="card">
-                    <h3>Clinical Summary Report</h3>
-                    <div style="margin-top: 1rem;">
+                    <style>
+                        .summary-card {
+                            background-color: white;
+                            border-radius: 10px;
+                            padding: 20px;
+                            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                            margin-bottom: 20px;
+                        }
+                        .summary-section {
+                            border-left: 4px solid #3b82f6;
+                            padding-left: 15px;
+                            margin: 15px 0;
+                        }
+                        .summary-header {
+                            color: #1e40af;
+                            font-size: 1.2em;
+                            font-weight: 600;
+                            margin-bottom: 10px;
+                        }
+                        .summary-content {
+                            color: #374151;
+                            line-height: 1.6;
+                        }
+                    </style>
                 """, unsafe_allow_html=True)
-                st.markdown(response_dict["case_summary"].render())
-                st.markdown("</div></div>", unsafe_allow_html=True)
+
+                # Display the case summary in sections
+                case_summary = response_dict["case_summary"]
                 
-                # Download button
-                st.download_button(
-                    label="📥 Download Full Report",
-                    data=response_dict["case_summary"].render(),
-                    file_name="patient_case_summary.txt",
-                    mime="text/plain",
-                    key="download_report_button"
-                )
-            
-            with tab2:
+                # Patient Info Section
                 st.markdown("""
-                <div class="card">
-                    <h3>Patient Profile</h3>
-                """, unsafe_allow_html=True)
-                
-                # Demographics section
+                    <div class="summary-card">
+                        <div class="summary-section">
+                            <div class="summary-header">👤 Patient Information</div>
+                            <div class="summary-content">
+                                <strong>Name:</strong> {}<br>
+                                <strong>Age:</strong> {} years
+                            </div>
+                        </div>
+                    </div>
+                """.format(case_summary.patient_name, case_summary.age), unsafe_allow_html=True)
+
+                # Overall Assessment Section
+                st.markdown("""
+                    <div class="summary-card">
+                        <div class="summary-section">
+                            <div class="summary-header">📋 Overall Assessment</div>
+                            <div class="summary-content">
+                                {}
+                            </div>
+                        </div>
+                    </div>
+                """.format(case_summary.overall_assessment), unsafe_allow_html=True)
+
+                # Condition Summaries
+                for condition in case_summary.condition_summaries:
+                    st.markdown("""
+                        <div class="summary-card">
+                            <div class="summary-section">
+                                <div class="summary-header">🏥 {}</div>
+                                <div class="summary-content">
+                                    {}
+                                </div>
+                            </div>
+                        </div>
+                    """.format(condition.condition_display, condition.summary), unsafe_allow_html=True)
+
+                # Download options
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.markdown("""
-                    <div class="info-section">
-                        <h4>📋 Demographics</h4>
-                        <table class="patient-table">
-                            <tr><td><strong>Name</strong></td><td>{} {}</td></tr>
-                            <tr><td><strong>Birth Date</strong></td><td>{}</td></tr>
-                            <tr><td><strong>Gender</strong></td><td>{}</td></tr>
-                        </table>
-                    </div>
-                    """.format(
-                        patient_info.given_name,
-                        patient_info.family_name,
-                        patient_info.birth_date,
-                        patient_info.gender.capitalize()
-                    ), unsafe_allow_html=True)
+                    pdf_bytes = generate_pdf_report(case_summary)
+                    st.download_button(
+                        label="📥 Download Full Report (PDF)",
+                        data=pdf_bytes,
+                        file_name=f"patient_summary_{datetime.now().strftime('%Y%m%d')}.pdf",
+                        mime="application/pdf",
+                    )
+                with col2:
+                    st.download_button(
+                        label="📄 Download as Text",
+                        data=case_summary.render(),
+                        file_name=f"patient_summary_{datetime.now().strftime('%Y%m%d')}.txt",
+                        mime="text/plain",
+                    )
 
-                # Add CSS for the patient details
-                st.markdown("""
-                <style>
-                    .info-section {
-                        background-color: rgba(255, 255, 255, 0.8);
-                        border-radius: 8px;
-                        padding: 1rem;
-                        margin-bottom: 1rem;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-                    }
-                    
-                    .info-section h4 {
-                        color: #2c3e50;
-                        margin-bottom: 1rem;
-                        border-bottom: 2px solid #e3f2fd;
-                        padding-bottom: 0.5rem;
-                    }
-                    
-                    .patient-table {
-                        width: 100%;
-                        border-collapse: separate;
-                        border-spacing: 0 0.5rem;
-                    }
-                    
-                    .patient-table td {
-                        padding: 0.5rem;
-                    }
-                    
-                    .patient-table tr:hover {
-                        background-color: rgba(227, 242, 253, 0.3);
-                    }
-                    
-                    .condition-card {
-                        background-color: rgba(255, 255, 255, 0.8);
-                        border-radius: 8px;
-                        padding: 1rem;
-                        margin-bottom: 0.5rem;
-                        border-left: 4px solid #90caf9;
-                    }
-                    
-                    .medication-card {
-                        background-color: rgba(255, 255, 255, 0.8);
-                        border-radius: 8px;
-                        padding: 1rem;
-                        margin-bottom: 0.5rem;
-                        border-left: 4px solid #81c784;
-                    }
-                    
-                    .encounter-card {
-                        background-color: rgba(255, 255, 255, 0.8);
-                        border-radius: 8px;
-                        padding: 1rem;
-                        margin-bottom: 0.5rem;
-                        border-left: 4px solid #ffb74d;
-                    }
-                    
-                    .section-title {
-                        color: #2c3e50;
-                        margin: 1.5rem 0 1rem 0;
-                        font-size: 1.1rem;
-                        font-weight: 600;
-                    }
-                </style>
-                """, unsafe_allow_html=True)
+            with tabs[1]:
+                # Conditions Tab
+                for condition in case_summary.condition_summaries:
+                    with st.expander(f"🔍 {condition.condition_display}", expanded=True):
+                        st.markdown("""
+                            <div class="summary-card">
+                                <div class="summary-content">
+                                    {}
+                                </div>
+                            </div>
+                        """.format(condition.summary), unsafe_allow_html=True)
 
-                # Conditions section
-                st.markdown("<div class='section-title'>🏥 Active Conditions</div>", unsafe_allow_html=True)
-                for condition in patient_info.conditions:
-                    st.markdown(f"""
-                    <div class="condition-card">
-                        <strong>{condition.display}</strong><br>
-                        <small>Status: {condition.clinical_status.capitalize()}</small>
-                    </div>
-                    """, unsafe_allow_html=True)
+            with tabs[2]:
+                # Medications Tab
+                if patient_info.current_medications:
+                    for med in patient_info.current_medications:
+                        with st.expander(f"💊 {med.name}", expanded=True):
+                            st.markdown("""
+                                <div class="summary-card">
+                                    <div class="summary-content">
+                                        <strong>Started:</strong> {}<br>
+                                        <strong>Instructions:</strong> {}
+                                    </div>
+                                </div>
+                            """.format(
+                                med.start_date or "Not specified",
+                                med.instructions or "No specific instructions"
+                            ), unsafe_allow_html=True)
+                else:
+                    st.info("No current medications recorded")
 
-                # Medications section
-                st.markdown("<div class='section-title'>💊 Current Medications</div>", unsafe_allow_html=True)
-                for med in patient_info.current_medications:
-                    st.markdown(f"""
-                    <div class="medication-card">
-                        <strong>{med.name}</strong><br>
-                        {f"<small>Started: {med.start_date}</small><br>" if med.start_date else ""}
-                        {f"<small>{med.instructions}</small>" if med.instructions else ""}
-                    </div>
-                    """, unsafe_allow_html=True)
+            with tabs[3]:
+                # Encounters Tab
+                if patient_info.recent_encounters:
+                    for encounter in patient_info.recent_encounters:
+                        with st.expander(f"📅 Encounter on {encounter.date}", expanded=True):
+                            st.markdown("""
+                                <div class="summary-card">
+                                    <div class="summary-content">
+                                        <strong>Type:</strong> {}<br>
+                                        <strong>Reason:</strong> {}
+                                    </div>
+                                </div>
+                            """.format(
+                                encounter.type_display or "Not specified",
+                                encounter.reason_display or "No reason provided"
+                            ), unsafe_allow_html=True)
+                else:
+                    st.info("No recent encounters recorded")
 
-                # Recent Encounters section
-                st.markdown("<div class='section-title'>👨‍⚕️ Recent Encounters</div>", unsafe_allow_html=True)
-                for encounter in patient_info.recent_encounters:
-                    st.markdown(f"""
-                    <div class="encounter-card">
-                        <strong>Date: {encounter.date}</strong><br>
-                        {f"<small>Type: {encounter.type_display}</small><br>" if encounter.type_display else ""}
-                        {f"<small>Reason: {encounter.reason_display}</small>" if encounter.reason_display else ""}
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                st.markdown("</div>", unsafe_allow_html=True)
-                
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
         finally:
