@@ -2,136 +2,149 @@
 
 A sophisticated medical data processing system that generates comprehensive clinical summaries by analyzing patient data, medical conditions, and relevant guidelines using advanced LLM and vector search technologies.
 
-## 🌟 Key Features
+## 🔷 High-Level Overview
 
-- **Automated Case Summary Generation**: Transform complex medical records into clear, structured summaries
-- **Medical Guidelines Integration**: Automatically match patient conditions with relevant medical guidelines
-- **Smart Condition Bundling**: Group related medical events and treatments by condition
-- **Multiple Output Formats**: Generate both PDF and text-based reports
-- **FHIR Compatible**: Process standard FHIR-formatted patient data
-
-## 🏗️ Architecture
+Below is an architectural overview of the system:
 
 ```
-FHIR Patient Data (JSON)
-↓
+FHIR Patient Data (JSON) 
+       ↓
 Data Extraction & Parsing
-↓
+       ↓
 Patient Information Structure
-↓
+       ↓
 Condition Bundle Creation (LLM)
-↓
+       ↓
 LlamaIndex Retrieval
-├─→ Medical Guidelines Search
-└─→ Relevant Section Matching
-↓
+       ├─→ Medical Guidelines Search
+       └─→ Relevant Section Matching
+       ↓
 Guideline Analysis (LLM)
-↓
+       ↓
 Case Summary Generation
-|
-├─→ Overall Assessment
-├─→ Condition Summaries
-├─→ Medication Analysis
-└─→ Encounter History
-↓
+       |
+       ├─→ Overall Assessment
+       ├─→ Condition Summaries
+       ├─→ Medication Analysis
+       └─→ Encounter History
+       ↓
 Final Output Formats
 ```
-## 🛠️ Technical Components
 
-### Data Models
-- `PatientInfo`: Core patient demographic and medical data
-- `ConditionBundle`: Logical grouping of conditions and related medical events
-- `CaseSummary`: Structured format for final generated summaries
+## 🌟 Features
 
-### Key Technologies
-- **LlamaIndex**: Semantic search and retrieval of medical guidelines
-- **OpenAI GPT**: Natural language processing and summary generation
-- **Pydantic**: Data validation and serialization
-- **FPDF**: PDF report generation
+### Medical Case Summary System
+- **Automated Case Summary Generation**: Transform complex medical records into clear, structured summaries
+  - Process FHIR-formatted patient data
+  - Extract relevant medical information
+  - Generate comprehensive clinical summaries
+- **Medical Guidelines Integration**: Automatically match patient conditions with relevant medical guidelines
+  - LlamaIndex-powered guideline search
+  - Contextual matching of conditions
+  - Evidence-based recommendations
+- **Smart Condition Bundling**: Group related medical events and treatments
+  - Intelligent condition association
+  - Treatment timeline organization
+  - Medication correlation
 
-## 📋 Prerequisites
+## 🚀 Getting Started
 
-```bash
-# Python 3.8 or higher required
-python -m pip install -r requirements.txt
+### Prerequisites
+```
+python >= 3.8
+streamlit
+llama-index
+pydantic
+fpdf
 ```
 
-Required environment variables:
+### Installation
 
+1. Clone the repository
 ```bash
-OPENAI_API_KEY=your_api_key
-LLAMA_CLOUD_API_KEY=your_llama_cloud_key
+git clone https://github.com/vizz1234/patient-case-summary-workflow.git
+cd patient-case-summary-workflow
 ```
 
-## 🚀 Quick Start
-
-1. **Install Dependencies**
+2. Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-2. **Set Up Environment**
+3. Set up your environment variables in `.streamlit/secrets.toml`:
+```toml
+[api_keys]
+OPENAI_API_KEY = "your-openai-key"
+
+[llama_cloud]
+INDEX_NAME = "your-index-name"
+PROJECT_NAME = "your-project-name"
+ORGANIZATION_ID = "your-org-id"
+LLAMA_CLOUD_API_KEY = "your-llama-cloud-key"
+```
+
+4. Run the application
 ```bash
-cp .env.example .env
-# Edit .env with your API keys
+streamlit run patient_case_summary_workflow.py
 ```
 
-3. **Run the Application**
-```bash
-python patient_case_summary_workflow.py
+## 💡 Usage
+
+### Sample Workflow
+1. Upload FHIR patient data
+2. System processes and bundles conditions
+3. Retrieves relevant medical guidelines
+4. Generates comprehensive case summary
+
+### Example Outputs
+- Structured clinical summaries
+- Condition-specific assessments
+- Treatment recommendations
+- PDF reports
+
+## 🏗 Project Structure
+
+```
+patient-case-summary-workflow/
+├── .streamlit/                      # Streamlit configuration
+│   └── secrets.toml                 # API keys and configuration secrets
+├── data/                           # Input data directory
+│   └── almeta_buckridge.json       # Sample FHIR patient data
+├── patient_case_summary_workflow.py  # Main workflow implementation
+├── data_out/
+│   └── workflow_output/             # Generated outputs
+│       ├── patient_info.json
+│       ├── condition_bundles.json
+│       └── guideline_recommendations.jsonl
+├── requirements.txt                 # Project dependencies
+└── README.md                       # Project documentation
 ```
 
-## 💡 Usage Example
+## 🔒 Security
 
-```python
-from patient_case_summary_workflow import CaseSummaryWorkflow
+- API keys and sensitive information are stored in `.streamlit/secrets.toml`
+- The secrets file is excluded from version control
+- Environment variables are used for deployment
+- Different keys should be used for development and production
 
-# Initialize workflow
-workflow = CaseSummaryWorkflow()
+## 🛠 Technical Details
 
-# Process patient data
-summary = await workflow.process_patient_data("patient_data.json")
+### Components
+- **Streamlit**: Web interface and user interaction
+- **LlamaIndex**: Medical guideline retrieval and matching
+- **OpenAI**: Natural language processing and summary generation
+- **Pydantic**: Data validation and serialization
 
-# Generate report
-summary.to_pdf("patient_summary.pdf")
-```
+### Tools
+1. **FHIR Parser**
+   - Processes standardized medical data
+   - Extracts patient information
+   - Organizes medical history
 
-## 🔍 Condition Bundles
-
-Condition Bundles are intelligent groupings of medical information:
-
-```python
-{
-    "condition": "Asthma",
-    "encounters": ["Asthma follow-up", "Emergency visit"],
-    "medications": ["Albuterol inhaler", "Oral steroids"]
-}
-```
-
-This structure helps in:
-- Organizing related medical events
-- Matching relevant guidelines
-- Generating coherent summaries
-
-## 📊 Output Examples
-
-### Summary Structure
-```
-CLINICAL CASE SUMMARY
-====================
-PATIENT: John Doe (Age: 45)
-
-OVERALL ASSESSMENT:
------------------
-[Comprehensive patient status]
-
-CONDITION SUMMARIES:
-------------------
-1. Asthma
-   - Current Status
-   - Treatment Plan
-   - Guideline Adherence
-```
+2. **Condition Bundler**
+   - Groups related medical events
+   - Associates treatments and medications
+   - Creates coherent condition summaries
 
 ## 🤝 Contributing
 
@@ -140,6 +153,9 @@ CONDITION SUMMARIES:
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
+
+---
+**Note**: This tool is for informational purposes only and should not be used as a substitute for professional medical judgment.
 
 ## 📝 License
 
