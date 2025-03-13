@@ -75,6 +75,7 @@ pip install -r requirements.txt
 ```toml
 [api_keys]
 OPENAI_API_KEY = "your-openai-key"
+PHOENIX_API_KEY = "your-phoenix-key"
 
 [llama_cloud]
 INDEX_NAME = "your-index-name"
