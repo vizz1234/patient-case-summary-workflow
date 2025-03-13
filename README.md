@@ -157,58 +157,10 @@ patient-case-summary-workflow/
 ---
 **Note**: This tool is for informational purposes only and should not be used as a substitute for professional medical judgment.
 
-## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
 
-- OpenAI for GPT models
-- LlamaIndex team for vector search capabilities
-- Medical guidelines databases
-- FHIR standard documentation
 
-## 📮 Contact
 
-For questions and support, please open an issue in the GitHub repository.
 
----
-**Note**: This tool is for informational purposes only and should not be used as a substitute for professional medical judgment.
-
-## 📁 Project Structure
-
-```
-patient-case-summary-workflow/
-├── .streamlit/                      # Streamlit configuration
-│   └── secrets.toml                 # API keys and configuration secrets
-├── data/                           # Input data directory
-│   └── almeta_buckridge.json       # Sample FHIR patient data
-├── patient_case_summary_workflow.py  # Main workflow implementation
-├── data_out/
-│   └── workflow_output/             # Generated outputs
-│       ├── patient_info.json
-│       ├── condition_bundles.json
-│       └── guideline_recommendations.jsonl
-├── requirements.txt                 # Project dependencies
-└── README.md                       # Project documentation
-```
-
-### Key Files
-
-- **patient_case_summary_workflow.py**: Core implementation containing:
-  - Data models (PatientInfo, ConditionBundle, etc.)
-  - FHIR data parsing
-  - LLM integration
-  - Guideline retrieval
-  - Case summary generation
-  - Streamlit UI
-
-- **.streamlit/secrets.toml**: Contains configuration for:
-  - LlamaCloud API keys
-  - Index configuration
-  - Project settings
-  - Organization details
-
-- **data/**: Contains input FHIR-formatted patient data files
-- **data_out/workflow_output/**: Generated analysis outputs and cached results
 
