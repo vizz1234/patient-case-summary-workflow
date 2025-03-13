@@ -12,6 +12,7 @@ A sophisticated medical data processing system that generates comprehensive clin
 
 ## 🏗️ Architecture
 
+```
 FHIR Patient Data (JSON)
 ↓
 Data Extraction & Parsing
@@ -34,7 +35,7 @@ Case Summary Generation
 └─→ Encounter History
 ↓
 Final Output Formats
-
+```
 ## 🛠️ Technical Components
 
 ### Data Models
